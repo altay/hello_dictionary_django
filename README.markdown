@@ -1,7 +1,7 @@
 Hello, Dictionary!
 ==================
 
-This is the example Rails app for the Wordnik API and the wordnik-ruby gem.  
+This is the example Django app for the Wordnik API and the wordnik Python package.  
 
 Follow the instructions, and you'll have a working dictionary up and running in 15 minutes!
 Resources
@@ -12,12 +12,12 @@ Wordnik API Key Signup: http://api.wordnik.com/signup
 
 Wordnik API Support: http://groups.google.com/group/wordnik-api
 
-wordnik-ruby gem on github: http://github.com/wordnik/wordnik-ruby
+wordnik-python package on github: http://github.com/wordnik/wordnik-python
 Tutorial
 ========
 
 1. Create a new Rails app: 
-    >> rails hello_dictionary
+     >> rails hello_dictionary
 
 2. Install the wordnik-ruby gem (you may need to do this as sudo, depending on your setup):
     >> gem install wordnik-ruby
@@ -194,7 +194,7 @@ Wordnik API Key Signup: http://api.wordnik.com/signup
 
 Wordnik API Support: http://groups.google.com/group/wordnik-api
 
-wordnik-ruby gem on github: http://github.com/wordnik/wordnik-ruby
+wordnik-python on github: http://github.com/wordnik/wordnik-python
 Copyright
 =========
 

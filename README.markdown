@@ -17,9 +17,11 @@ Tutorial
 ========
 
 1. Create a new Rails app: 
+
     rails hello_dictionary
 
 2. Install the wordnik-ruby gem (you may need to do this as sudo, depending on your setup):
+
     gem install wordnik-ruby
 
 3. Edit two lines in hello_dictionary/config/environment.rb:

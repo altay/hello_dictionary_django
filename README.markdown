@@ -1,9 +1,11 @@
-= Hello, Dictionary!
+Hello, Dictionary!
+==================
 
 This is the example Rails app for the Wordnik API and the wordnik-ruby gem.  
 
 Follow the instructions, and you'll have a working dictionary up and running in 15 minutes!
-= Resources
+Resources
+=========
 Wordnik API Documentation: http://docs.wordnik.com/api/methods
 
 Wordnik API Key Signup: http://api.wordnik.com/signup
@@ -11,7 +13,8 @@ Wordnik API Key Signup: http://api.wordnik.com/signup
 Wordnik API Support: http://groups.google.com/group/wordnik-api
 
 wordnik-ruby gem on github: http://github.com/wordnik/wordnik-ruby
-= Tutorial
+Tutorial
+========
 
 1. Create a new Rails app: 
     >> rails hello_dictionary
@@ -183,7 +186,8 @@ wordnik-ruby gem on github: http://github.com/wordnik/wordnik-ruby
 
 10. Party!
 
-= Resources
+Resources
+=========
 Wordnik API Documentation: http://docs.wordnik.com/api/methods
 
 Wordnik API Key Signup: http://api.wordnik.com/signup
@@ -191,6 +195,7 @@ Wordnik API Key Signup: http://api.wordnik.com/signup
 Wordnik API Support: http://groups.google.com/group/wordnik-api
 
 wordnik-ruby gem on github: http://github.com/wordnik/wordnik-ruby
-== Copyright
+Copyright
+=========
 
 Copyright (c) 2010 Altay Guvench / Wordnik.com. See LICENSE for details.

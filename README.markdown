@@ -17,7 +17,10 @@ Tutorial
 ========
 
 Install the wordnik Python package:
-    easy_install wordnik
+    wget http://pypi.python.org/packages/source/w/wordnik/wordnik-0.2.tar.gz#md5=b553e4df2ea4524d8621ae62565f175b
+    tar zxvf wordnik-0.2.tar.gz
+    cd wordnik-0.2
+    python setup.py install
 
 Create a new Django project: 
     django-admin.py startproject wordnikapi

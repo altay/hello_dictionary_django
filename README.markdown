@@ -43,57 +43,46 @@ Edit urlpatterns in urls.py:
         (r'^wordnik/', 'wordnikapi.hello_dictionary.views.index')
     )
 
-2. Install the wordnik-ruby gem (you may need to do this as sudo, depending on your setup):
+Edit hello_dictionary/views.py:
+    from django.shortcuts import render_to_response
+    import wordnik
+    from datetime import datetime
 
-    gem install wordnik-ruby
+    def index(request):
+      wordnik_client = wordnik.Wordnik(api_key="85b993ddaabe04346e0090d379b02d18ad04bda75d4e0ecca")
+      wotd = wordnik_client.word_of_the_day()
 
-3. Edit two lines in hello_dictionary/config/environment.rb:
-    3a. Add the wordnik-ruby gem (inside of the Rails::Initializer.run block):
-    config.gem "wordnik-ruby"
-    3b. Add your Wordnik API key at the end of the file (outside of the Rails::Initializer.run block). Don't have a key? Go here: http://api.wordnik.com/signup
-    ENV['WORDNIK_API_KEY'] = "YOUR_API_KEY_GOES_HERE"
+      template_data = { 
+        'wotd': wotd['wordstring'], 
+        'date': datetime.now() 
+      }
 
-3. Add the "initialize_wordnik" function to hello_dictionary/app/controllers/application_controller.rb:
+      if ((len(request.GET.get('word_search',''))>0) or (len(request.GET.get('commit',''))>0)): # user has submitted form or clicked link
+        if (request.GET.get('commit')=="I'm Feeling Wordie"):
+          word = wordnik_client.random_word()
+        else:
+          word = wordnik_client.word(request.GET.get('word_search'))
 
-    class ApplicationController < ActionController::Base
-      helper :all # include all helpers, all the time
-      protect_from_forgery # See ActionController::RequestForgeryProtection for details
+        wordstring = word.get('wordstring', '')
+        related_data = wordnik_client.related(wordstring)
+        related = {}
+        for r in related_data:
+          related[r.get('relType')] = r.get('wordstrings')[0:4]
 
-      def initialize_wordnik(options={})
-        options.merge!({:api_key=>ENV['WORDNIK_API_KEY']})
-        @wordnik = Wordnik.new(options)
-        @wotd = @wordnik.word_of_the_day
-      end
-    end
+        phrases_data = wordnik_client.phrases(wordstring)
+        phrases = [("%s %s" % (p.get('gram1'), p.get('gram2'))) for p in phrases_data]
 
-4. Create a controller and add an 'index' action:
-    >> script/generate controller wordnik
+        template_data.update({
+          'wordstring': wordstring,
+          'definitions': wordnik_client.definitions(wordstring),
+          'examples': wordnik_client.examples(wordstring),
+          'phrases': phrases,
+          'related': related
+        })
 
-5. Edit the new controller (hello_dictionary/app/controllers/wordnik_controller.rb), like so:
-    class WordnikController < ApplicationController
+      return render_to_response('index.html', template_data)
 
-      def index
-        # initialize_wordnik will set up the @wordnik object, which we can then use to call the wordnik api.
-        # it also fetches the word of the day, @wotd
-        # don't forget to specify your WORDNIK_API_KEY at the bottom of config/environment.rb!
-        initialize_wordnik
-
-        if (params[:word_search] || params[:commit]) # user has submitted the form or clicked a link
-          if params[:commit]=="I'm Feeling Wordie"
-            @word = @wordnik.random_word
-          else
-            @word = Word.find(params[:word_search])
-          end
-          @wordstring = @word.wordstring
-          @definitions = @word.definitions
-          @examples = @word.examples
-          @phrases = @word.phrases
-          @related = @word.related
-        end
-      end
-    end
-
-6. Create your app's layout (hello_dictionary/app/views/layouts/application.html.erb):
+Create the wordnikapi/templates directory, and edit templates/index.html:
     <html>
       <head>
         <title>Hello, Dictionary!</title>
@@ -101,115 +90,108 @@ Edit urlpatterns in urls.py:
       <body>
         <div>
           <h1>Hello, Dictionary!</h3>
-          <h3>The Wordnik Word of the Day for <%= Time.now.strftime("%A, %B %d, %Y") %> is... <strong><%= link_to(@wotd['wordstring'], "/wordnik?word_search=#{@wotd['wordstring']}") %></strong>!
+          <h3>The Wordnik Word of the Day for {{date|date:"l M d, Y"}} is... <strong><a href="/wordnik?word_search={{wotd|urlencode}}">{{wotd}}</a></strong>!
           </h3>
           <p>
-            <% form_tag('/wordnik', :method=>'get') do -%>
+            <form method='get' action='/wordnik'>
               Look up a word: 
-              <%= text_field_tag('word_search') %>
-              <%= submit_tag('Search') %>
-              <%= submit_tag("I'm Feeling Wordie") %>
-            <% end %>
+              <input type='text' name='word_search' />
+              <input type='submit' name='commit' value='Search' />
+              <input type='submit' name='commit' value="I'm Feeling Wordie" />
+            </form>
           </p>
         </div>
-        <%= yield %>
+    {% if wordstring %}
+      <hr />
+      <div>
+        <h2>Definitions of <em>{{wordstring}}</em></h2>
+        {% if not definitions %}
+          <em>Sorry, we couldn't find any definitions!</em>
+        {% else %}
+          <ul>
+            {% for definition in definitions %}
+              {% if definition.text %}
+                <li>{{definition.text}}</li>
+              {% endif %}
+            {% endfor %}
+          </ul>
+          <a href="http://wordnik.com/words/{{wordstring}}">more definitions</a>
+        {% endif %}
+      </div>
+
+      <div>
+        <h2>Examples of <em>{{wordstring}}</em></h2>
+        {% if not examples %}
+          <em>Sorry, we couldn't find any examples!</em>
+        {% else %}
+          <ul>
+            {% for example in examples %}
+              {% if example.display %}
+                <li>
+                  {{example.display}}
+                  {% if example.title %} 
+                    <br />
+                    - <em>{{example.title}}</em>
+                  {% endif %}
+                </li>
+              {% endif %}
+            {% endfor %}
+          </ul>
+          <a href="http://wordnik.com/words/{{wordstring}}">more examples</a>
+        {% endif %}
+      </div>
+
+      <div>
+        <h2>Words related to <em>{{wordstring}}</em></h2>
+        {% if not related %}
+          <em>Sorry, we couldn't find any related words!</em>
+        {% else %}
+          {% for rel_type, rel_words in related.items %}
+            {% if rel_words %}
+              <h3>{{rel_type}}</h3>
+              <ul>
+                <!-- only display the first 5 related words in each category -->
+                {% for r in rel_words %}
+                  <li><a href="/wordnik?word_search={{r|urlencode}}">{{r}}</a></li>
+                {% endfor %}
+              </ul>
+            {% endif %}
+          {% endfor %}
+          <a href="http://wordnik.com/words/{{wordstring|urlencode}}">more examples</a>
+        {% endif %}
+      </div>
+
+      <div>
+        <h2>Phrases containing <em>{{wordstring}}</em></h2>
+        {% if not phrases %}
+          <em>Sorry, we couldn't find any phrases!</em>
+        {% else %}
+          <ul>
+            {% for phrase in phrases %}
+              <li><a href="/wordnik?word_search={{phrase|urlencode}}">{{phrase}}</a></li>
+            {% endfor %}
+          </ul>
+          <a href="http://wordnik.com/words/{{wordstring|urlencode}}">more phrases</a>
+        {% endif %}
+      </div>
+    {% endif %}
         <hr />
         <div>
-          <p>Hello Dictionary was built with the <%= link_to("Wordnik API", "http://wordnik.com/developers") %>.</p>
-          <p><strong>Documentation</strong>: <%= link_to("http://docs.wordnik.com/api/methods", "http://docs.wordnik.com/api/methods") %></p>
-          <p><strong>API Key Signup</strong>: <%= link_to("http://api.wordnik.com/signup/", "http://api.wordnik.com/signup/") %></p>
-          <p><strong>Support</strong>: <%= link_to("http://groups.google.com/group/wordnik-api", "http://groups.google.com/group/wordnik-api") %></p>
+          <p>Hello Dictionary was built with the <a href="http://wordnik.com/developers">Wordnik API</a>.</p>
+          <p><strong>Documentation</strong>: <a href="http://docs.wordnik.com/api/methods">http://docs.wordnik.com/api/methods</a></p>
+          <p><strong>API Key Signup</strong>: <a href="http://api.wordnik.com/signup/">http://api.wordnik.com/signup</a></p>
+          <p><strong>Support</strong>: <a href="http://groups.google.com/group/wordnik-api">http://groups.google.com/group/wordnik-api</a></p>
         </div>
       </body>
     </html>
 
-7. Create the template for the wordnik/index action (hello_dictionary/app/views/wordnik/index.html.erb):
-    <% unless @word.nil? %>
-      <hr />
-      <div>
-        <h2>Definitions of <em><%= @wordstring %></em></h2>
-        <% if @definitions.blank? %>
-          <em>Sorry, we couldn't find any definitions!</em>
-        <% else %>
-          <ul>
-            <% @definitions.each do |definition| %>
-              <% unless definition.text.blank? -%>
-                <li><%= definition.text %></li>
-              <% end %>
-            <% end %>
-          </ul>
-          <%= link_to("more definitions", "http://wordnik.com/words/#{@wordstring}") %>
-        <% end %>
-      </div>
+Start the Django server:
+    python manage.py runserver
 
-      <div>
-        <h2>Examples of <em><%= @wordstring %></em></h2>
-        <% if @examples.blank? %>
-          <em>Sorry, we couldn't find any examples!</em>
-        <% else %>
-          <ul>
-            <% @examples.each do |example| %>
-              <% unless example.display.blank? -%>
-                <li>
-                  <%= example.display -%>
-                  <% unless example.title.blank? %>
-                    <br />
-                    - <em><%= example.title %></em>
-                  <% end %>
-                </li>
-              <% end %>
-            <% end %>
-          </ul>
-          <%= link_to("more examples", "http://wordnik.com/words/#{@wordstring}") %>
-        <% end %>
-      </div>
+Check out your work:
+    open http://localhost:8000/
 
-      <div>
-        <h2>Words related to <em><%= @wordstring %></em></h2>
-        <% if @related.blank? %>
-          <em>Sorry, we couldn't find any related words!</em>
-        <% else %>
-            <% @related.each do |relation_type, related_words| %>
-              <% unless related_words.blank? -%>
-                <h3><%= relation_type %></h3>
-                <ul>
-                  <!-- only display the first 5 related words in each category -->
-                  <% related_words[0..4].each do |related_word| %>
-                    <li><%= link_to(related_word.wordstring, "/wordnik?word_search=#{URI.escape(related_word.wordstring)}") -%></li>
-                  <% end %>
-                </ul>
-              <% end %>
-            <% end %>
-          </ul>
-          <%= link_to("more related words", "http://wordnik.com/words/#{@wordstring}") %>
-        <% end %>
-      </div>
-
-      <div>
-        <h2>Phrases containing <em><%= @wordstring %></em></h2>
-        <% if @phrases.blank? %>
-          <em>Sorry, we couldn't find any phrases!</em>
-        <% else %>
-          <ul>
-            <% @phrases.each do |phrase| %>
-              <% unless phrase['gram1'].blank? -%>
-                <% complete_phrase = "#{phrase['gram1']} #{phrase['gram2']}" %>
-                <li><%= link_to(complete_phrase, "/wordnik?word_search=#{URI.escape(complete_phrase)}") %></li>
-              <% end %>
-            <% end %>
-          </ul>
-          <%= link_to("more phrases", "http://wordnik.com/words/#{@wordstring}") %>
-        <% end %>
-      </div>
-    <% end %>
-
-7. Start your app's server:
-    >> script/server
-
-9. Navigate to http://localhost:3000/wordnik
-    >> open http://localhost:3000/wordnik
-
-10. Party!
+Hello, Dictionary!
 
 Resources
 =========

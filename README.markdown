@@ -16,8 +16,21 @@ wordnik-python package on github: http://github.com/wordnik/wordnik-python
 Tutorial
 ========
 
-Create a new Rails app: 
-    rails hello_dictionary
+Create a new Django project: 
+    django-admin.py startproject wordnikapi
+
+Create the hello_dictionary app: 
+    python manage.py startapp hello_dictionary
+
+Edit TEMPLATE_DIRS in settings.py
+    import os.path
+    TEMPLATE_DIRS = ( os.path.join(os.path.dirname(__file__), 'templates'), )
+
+Edit INSTALLED_APPS in settings.py
+    INSTALLED_APPS = (
+        'wordnikapi.hello_dictionary',
+        'wordnik'
+    )
 
 2. Install the wordnik-ruby gem (you may need to do this as sudo, depending on your setup):
 

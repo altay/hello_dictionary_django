@@ -68,16 +68,9 @@ ROOT_URLCONF = 'wordnikapi.urls'
 # calculated paths for django and the site
 # used as starting points for various other paths
 import os.path
-
-TEMPLATE_DIRS = (
-  os.path.join(os.path.dirname(__file__), 'templates'),
-)
+TEMPLATE_DIRS = ( os.path.join(os.path.dirname(__file__), 'templates'), )
 
 INSTALLED_APPS = (
-#    'django.contrib.auth',
-    'django.contrib.contenttypes',
-#    'django.contrib.sessions',
-#    'django.contrib.sites',
     'wordnikapi.hello_dictionary',
     'wordnik'
 )
